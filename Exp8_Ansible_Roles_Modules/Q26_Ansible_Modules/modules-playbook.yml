@@ -1,0 +1,88 @@
+---
+# Simple application deployed using many Ansible modules
+- name: Deploy a simple application using Ansible modules
+  hosts: local
+  become: true
+
+  vars:
+    app_name: simpleapp
+    app_user: appuser
+    app_dir: /var/www/html/simpleapp
+
+  tasks:
+    - name: 1. ping module - check connection
+      ansible.builtin.ping:
+
+    - name: 2. apt module - install required packages
+      ansible.builtin.apt:
+        name:
+          - apache2
+          - git
+          - tree
+        state: present
+        update_cache: true
+
+    - name: 3. user module - create application user
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        shell: /bin/bash
+        create_home: true
+
+    - name: 4. file module - create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        mode: "0755"
+
+    - name: 5. copy module - deploy application page
+      ansible.builtin.copy:
+        dest: "{{ app_dir }}/index.html"
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head><title>{{ app_name }}</title></head>
+          <body>
+            <h1>{{ app_name }} deployed with Ansible modules</h1>
+            <p>Server: {{ ansible_hostname }} | OS: {{ ansible_distribution }} {{ ansible_distribution_version }}</p>
+          </body>
+          </html>
+        owner: "{{ app_user }}"
+        mode: "0644"
+
+    - name: 6. lineinfile module - write app config
+      ansible.builtin.lineinfile:
+        path: "{{ app_dir }}/app.conf"
+        line: "APP_NAME={{ app_name }}"
+        create: true
+        mode: "0644"
+
+    - name: 7. service module - start and enable Apache
+      ansible.builtin.service:
+        name: apache2
+        state: started
+        enabled: true
+
+    - name: 8. command module - get uptime
+      ansible.builtin.command: uptime
+      register: up
+      changed_when: false
+
+    - name: 9. shell module - list deployed files
+      ansible.builtin.shell: ls -l {{ app_dir }} | wc -l
+      register: files
+      changed_when: false
+
+    - name: 10. uri module - verify application URL
+      ansible.builtin.uri:
+        url: "http://localhost/{{ app_name }}/"
+        return_content: true
+      register: page
+
+    - name: 11. debug module - print results
+      ansible.builtin.debug:
+        msg:
+          - "Uptime: {{ up.stdout }}"
+          - "Files in app dir (lines): {{ files.stdout }}"
+          - "App URL status: {{ page.status }}"
+          - "Open http://localhost/{{ app_name }}/ in browser"

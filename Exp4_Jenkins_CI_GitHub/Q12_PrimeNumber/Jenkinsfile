@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+
+    // Build automatically when code is pushed to GitHub (webhook),
+    // pollSCM is the backup if the webhook cannot reach Jenkins
+    triggers {
+        githubPush()
+        pollSCM('* * * * *')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/<your-username>/prime-ci.git'
+            }
+        }
+        stage('Compile') {
+            steps {
+                sh 'javac PrimeCheck.java'
+            }
+        }
+        stage('Execute') {
+            steps {
+                sh 'echo "29" | java PrimeCheck'
+            }
+        }
+    }
+    post {
+        success {
+            echo 'Build and execution successful'
+        }
+        failure {
+            echo 'Build failed'
+        }
+    }
+}

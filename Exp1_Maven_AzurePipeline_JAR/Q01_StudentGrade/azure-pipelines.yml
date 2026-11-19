@@ -1,0 +1,38 @@
+# Azure Pipeline: compile the Maven project and generate the JAR artifact
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: Maven@4
+  displayName: 'Compile source code'
+  inputs:
+    mavenPomFile: 'pom.xml'
+    goals: 'clean compile'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.17'
+    publishJUnitResults: false
+
+- task: Maven@4
+  displayName: 'Package JAR'
+  inputs:
+    mavenPomFile: 'pom.xml'
+    goals: 'package'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.17'
+    publishJUnitResults: false
+
+- task: CopyFiles@2
+  displayName: 'Copy JAR to staging directory'
+  inputs:
+    SourceFolder: '$(System.DefaultWorkingDirectory)/target'
+    Contents: '*.jar'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish JAR artifact'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'

@@ -1,0 +1,21 @@
+---
+# roles/apache/tasks/main.yml
+- name: Install Apache web server
+  ansible.builtin.apt:
+    name: apache2
+    state: present
+
+- name: Start and enable Apache service
+  ansible.builtin.service:
+    name: apache2
+    state: started
+    enabled: true
+
+- name: Check Apache version
+  ansible.builtin.command: apache2 -v
+  register: apache_ver
+  changed_when: false
+
+- name: Show Apache version
+  ansible.builtin.debug:
+    msg: "{{ apache_ver.stdout_lines[0] }}"

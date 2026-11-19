@@ -1,0 +1,51 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME   = 'LargestOfThree'
+        JAR_NAME   = 'LargestOfThree.jar'
+        DEPLOY_DIR = '/var/lib/jenkins/deployments/largest-of-three'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/<your-username>/largest-of-three.git'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'rm -rf build && mkdir -p build'
+                sh 'javac -d build ${APP_NAME}.java'
+            }
+        }
+        stage('Package') {
+            steps {
+                // jar c=create f=file e=entry point(Main-Class)
+                sh 'jar cfe ${JAR_NAME} ${APP_NAME} -C build .'
+                archiveArtifacts artifacts: "${JAR_NAME}", fingerprint: true
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh 'mkdir -p ${DEPLOY_DIR}'
+                sh 'cp ${JAR_NAME} ${DEPLOY_DIR}/'
+                sh 'ls -l ${DEPLOY_DIR}'
+            }
+        }
+        stage('Execute & Verify') {
+            steps {
+                sh 'cd ${DEPLOY_DIR} && echo "12 45 30" | java -jar ${JAR_NAME} | tee output.txt'
+                sh 'grep -q "Largest number is: 45" ${DEPLOY_DIR}/output.txt && echo "VERIFIED: deployed application ran correctly"'
+            }
+        }
+    }
+    post {
+        success {
+            echo "Deployed to ${DEPLOY_DIR}/${JAR_NAME}"
+        }
+        failure {
+            echo 'CD pipeline failed'
+        }
+    }
+}

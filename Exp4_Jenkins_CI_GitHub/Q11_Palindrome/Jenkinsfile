@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/<your-username>/palindrome-ci.git'
+            }
+        }
+        stage('Compile') {
+            steps {
+                sh 'javac Palindrome.java'
+            }
+        }
+        stage('Execute') {
+            steps {
+                sh 'echo "12321" | java Palindrome'
+            }
+        }
+    }
+    post {
+        success {
+            echo 'Build and execution successful'
+        }
+        failure {
+            echo 'Build failed'
+        }
+    }
+}

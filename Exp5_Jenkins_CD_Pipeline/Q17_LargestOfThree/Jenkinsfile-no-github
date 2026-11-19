@@ -1,0 +1,73 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME   = 'LargestOfThree'
+        JAR_NAME   = 'LargestOfThree.jar'
+        DEPLOY_DIR = '/var/lib/jenkins/deployments/largest-of-three'
+    }
+
+    stages {
+        stage('Get Source') {
+            steps {
+                writeFile file: 'LargestOfThree.java', text: '''import java.util.Scanner;
+
+public class LargestOfThree {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Enter three integers: ");
+        int a = sc.nextInt();
+        int b = sc.nextInt();
+        int c = sc.nextInt();
+
+        int largest;
+        if (a >= b && a >= c) {
+            largest = a;
+        } else if (b >= a && b >= c) {
+            largest = b;
+        } else {
+            largest = c;
+        }
+        System.out.println("Largest number is: " + largest);
+        sc.close();
+    }
+}
+'''
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'rm -rf build && mkdir -p build'
+                sh 'javac -d build ${APP_NAME}.java'
+            }
+        }
+        stage('Package') {
+            steps {
+                // jar c=create f=file e=entry point(Main-Class)
+                sh 'jar cfe ${JAR_NAME} ${APP_NAME} -C build .'
+                archiveArtifacts artifacts: "${JAR_NAME}", fingerprint: true
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh 'mkdir -p ${DEPLOY_DIR}'
+                sh 'cp ${JAR_NAME} ${DEPLOY_DIR}/'
+                sh 'ls -l ${DEPLOY_DIR}'
+            }
+        }
+        stage('Execute & Verify') {
+            steps {
+                sh 'cd ${DEPLOY_DIR} && echo "12 45 30" | java -jar ${JAR_NAME} | tee output.txt'
+                sh 'grep -q "Largest number is: 45" ${DEPLOY_DIR}/output.txt && echo "VERIFIED: deployed application ran correctly"'
+            }
+        }
+    }
+    post {
+        success {
+            echo "Deployed to ${DEPLOY_DIR}/${JAR_NAME}"
+        }
+        failure {
+            echo 'CD pipeline failed'
+        }
+    }
+}

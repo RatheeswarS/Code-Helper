@@ -1,0 +1,24 @@
+---
+# stack.yml - runs all three roles on localhost
+- name: Install full stack (Git, PostgreSQL, Apache) using roles
+  hosts: localhost
+  connection: local
+  become: true
+
+  roles:
+    - prerequisites
+    - PostgreSQL
+    - apache
+
+  post_tasks:
+    - name: Gather installed package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Verify all packages are installed
+      ansible.builtin.assert:
+        that:
+          - "'git' in ansible_facts.packages"
+          - "'postgresql' in ansible_facts.packages"
+          - "'apache2' in ansible_facts.packages"
+        success_msg: "Git, PostgreSQL and Apache are installed successfully"

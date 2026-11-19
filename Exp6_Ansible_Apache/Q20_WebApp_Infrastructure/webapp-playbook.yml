@@ -1,0 +1,51 @@
+---
+- name: Configure simple web application infrastructure
+  hosts: local
+  become: true
+
+  vars:
+    page_heading: "My Simple Web Application"
+    page_description: "This web application infrastructure was configured automatically using an Ansible playbook with the Apache web server."
+
+  tasks:
+    - name: Install Apache web server
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+        update_cache: true
+
+    - name: Start and enable Apache
+      ansible.builtin.service:
+        name: apache2
+        state: started
+        enabled: true
+
+    - name: Deploy HTML page with heading and description
+      ansible.builtin.copy:
+        dest: /var/www/html/index.html
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>{{ page_heading }}</title>
+          </head>
+          <body>
+              <h1>{{ page_heading }}</h1>
+              <p>{{ page_description }}</p>
+          </body>
+          </html>
+        mode: "0644"
+
+    - name: Verify page is accessible at http://localhost
+      ansible.builtin.uri:
+        url: http://localhost
+        return_content: true
+        status_code: 200
+      register: page
+
+    - name: Check heading is present in the page
+      ansible.builtin.assert:
+        that:
+          - page_heading in page.content
+        success_msg: "Page is accessible at http://localhost (HTTP {{ page.status }})"
+        fail_msg: "Page content is wrong"

@@ -1,0 +1,47 @@
+---
+- name: Install Apache and deploy a welcome page
+  hosts: local
+  become: true
+
+  tasks:
+    - name: Update apt cache and install Apache
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+        update_cache: true
+
+    - name: Start and enable Apache service
+      ansible.builtin.service:
+        name: apache2
+        state: started
+        enabled: true
+
+    - name: Deploy welcome web page
+      ansible.builtin.copy:
+        dest: /var/www/html/index.html
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Welcome</title>
+          </head>
+          <body>
+              <h1>Welcome to Apache Web Server deployed using Ansible!</h1>
+          </body>
+          </html>
+        owner: www-data
+        group: www-data
+        mode: "0644"
+
+    - name: Verify web page using HTTP request
+      ansible.builtin.uri:
+        url: http://localhost
+        return_content: true
+        status_code: 200
+      register: web
+
+    - name: Show HTTP response
+      ansible.builtin.debug:
+        msg:
+          - "HTTP status: {{ web.status }}"
+          - "{{ 'Welcome message found - application is available' if 'Welcome' in web.content else 'Welcome message NOT found' }}"

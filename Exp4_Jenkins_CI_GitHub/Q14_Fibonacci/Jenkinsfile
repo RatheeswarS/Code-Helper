@@ -1,0 +1,27 @@
+pipeline {
+    agent any
+
+    // Check GitHub every minute and build automatically on every new commit
+    triggers {
+        githubPush()
+        pollSCM('* * * * *')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/<your-username>/fibonacci-ci.git'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'javac Fibonacci.java'
+            }
+        }
+        stage('Run') {
+            steps {
+                sh 'echo "10" | java Fibonacci'
+            }
+        }
+    }
+}

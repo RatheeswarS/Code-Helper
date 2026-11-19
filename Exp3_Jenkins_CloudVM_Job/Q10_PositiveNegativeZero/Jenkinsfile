@@ -1,0 +1,42 @@
+// Optional: same job as a Pipeline (New Item -> Pipeline -> paste this)
+pipeline {
+    agent any
+    tools {
+        jdk 'JDK21'        // name given in Manage Jenkins -> Tools -> JDK installations
+    }
+    stages {
+        stage('Create Source') {
+            steps {
+                writeFile file: 'NumberCheck.java', text: '''import java.util.Scanner;
+
+public class NumberCheck {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Enter an integer: ");
+        int n = sc.nextInt();
+        if (n > 0) {
+            System.out.println(n + " is POSITIVE");
+        } else if (n < 0) {
+            System.out.println(n + " is NEGATIVE");
+        } else {
+            System.out.println("The number is ZERO");
+        }
+        sc.close();
+    }
+}
+'''
+            }
+        }
+        stage('Compile') {
+            steps {
+                sh 'java -version'
+                sh 'javac NumberCheck.java'
+            }
+        }
+        stage('Execute') {
+            steps {
+                sh 'echo "-15" | java NumberCheck'
+            }
+        }
+    }
+}

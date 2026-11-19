@@ -1,0 +1,23 @@
+---
+# roles/PostgreSQL/tasks/main.yml
+- name: Install PostgreSQL
+  ansible.builtin.apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+    state: present
+
+- name: Start and enable PostgreSQL service
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+    enabled: true
+
+- name: Check PostgreSQL version
+  ansible.builtin.command: psql --version
+  register: pg_ver
+  changed_when: false
+
+- name: Show PostgreSQL version
+  ansible.builtin.debug:
+    msg: "{{ pg_ver.stdout }}"
